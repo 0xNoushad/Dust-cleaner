@@ -35,6 +35,13 @@ interface TokenCreationResponse {
 
 const PUMP_API_URL = 'https://api.pump.fun/create-token';
 
+const HEADERS = {
+  ...ACTIONS_CORS_HEADERS,
+  'Cache-Control': 'max-age=3600',
+  'X-Action-Version': '1',
+  'X-Blockchain-Ids': 'solana-mainnet',
+};
+
 export async function GET(): Promise<Response> {
   try {
     const tokenCreationInfo = {
@@ -68,10 +75,7 @@ export async function GET(): Promise<Response> {
 
     return Response.json(tokenCreationInfo, {
       status: 200,
-      headers: {
-        ...ACTIONS_CORS_HEADERS,
-        'Cache-Control': 'max-age=3600', // Cache for 1 hour
-      },
+      headers: HEADERS,
     });
   } catch (error) {
     console.error("Error in GET /api/actions/meme:", error);
@@ -79,7 +83,7 @@ export async function GET(): Promise<Response> {
       { error: "An unexpected error occurred. Please try again later." },
       {
         status: 500,
-        headers: ACTIONS_CORS_HEADERS,
+        headers: HEADERS,
       }
     );
   }
@@ -93,14 +97,14 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return Response.json({ error: "Invalid request body" }, {
       status: 400,
-      headers: ACTIONS_CORS_HEADERS,
+      headers: HEADERS,
     });
   }
 
   if (!body.account || !body.name || !body.symbol || !body.description || !body.imageUrl) {
     return Response.json({ error: "Missing required parameters" }, {
       status: 400,
-      headers: ACTIONS_CORS_HEADERS,
+      headers: HEADERS,
     });
   }
 
@@ -125,14 +129,25 @@ export async function POST(request: Request): Promise<Response> {
     });
 
     return Response.json(payload, {
-      headers: ACTIONS_CORS_HEADERS,
+      headers: HEADERS,
     });
   } catch (error) {
     console.error("Error creating Blink token:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     return Response.json({ error: `Failed to create Blink token: ${errorMessage}` }, {
       status: 500,
-      headers: ACTIONS_CORS_HEADERS,
+      headers: HEADERS,
     });
   }
+}
+
+export async function OPTIONS(): Promise<Response> {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      ...HEADERS,
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 }
