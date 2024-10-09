@@ -1,178 +1,138 @@
 import {
-    ACTIONS_CORS_HEADERS,
-    ActionGetResponse,
-    ActionPostRequest,
-    ActionPostResponse,
-    createPostResponse,
-  } from "@solana/actions";
-  
-  import {
-    Connection,
-    PublicKey,
-    Transaction,
-    SystemProgram,
-    Keypair,
-  } from "@solana/web3.js";
-  
-  import {
-    createInitializeMintInstruction,
-    createAssociatedTokenAccountInstruction,
-    createMintToInstruction,
-    getAssociatedTokenAddress,
-    TOKEN_PROGRAM_ID,
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    MintLayout,
-  } from "@solana/spl-token";
-  
-  interface CustomActionGetResponse extends Omit<ActionGetResponse, 'links'> {
-    inputs: Array<{
-      label: string;
-      name: string;
-      type: string;
-      required: boolean;
-    }>;
-    links: {
-      submit: {
-        label: string;
-        href: string;
-      };
-    };
-  }
-  
-  interface TokenCreationBody extends ActionPostRequest {
+  ACTIONS_CORS_HEADERS,
+  ActionPostRequest,
+  ActionPostResponse,
+  createPostResponse,
+} from "@solana/actions";
+import axios from 'axios';
+import { Transaction } from '@solana/web3.js';
+
+interface TokenCreationBody extends ActionPostRequest {
+  name: string;
+  symbol: string;
+  description: string;
+  imageUrl: string;
+}
+
+interface TokenCreationResponse {
+  title: string;
+  description: string;
+  inputs: Array<{
+    label: string;
     name: string;
-    symbol: string;
-    description: string;
-    imageUrl: string;
-  }
-  
-  export async function GET(request: Request): Promise<Response> {
-    const payload: CustomActionGetResponse = {
-      title: "Create Your Token",
-      description: "Fill in the details to create your own token on Solana.",
-      inputs: [
-        { label: "Name", name: "name", type: "text", required: true },
-        { label: "Symbol", name: "symbol", type: "text", required: true },
-        { label: "Description", name: "description", type: "textarea", required: true },
-        { label: "Image URL", name: "imageUrl", type: "url", required: true }
-      ],
-      links: {
-        submit: {
-          label: "Create Token",
-          href: `${new URL(request.url).origin}/api/create-token`,
+    type: string;
+    required: boolean;
+  }>;
+  links: {
+    submit: {
+      label: string;
+      href: string;
+    };
+  };
+  icon: string;
+  label: string;
+}
+
+const PUMP_API_URL = 'https://api.pump.fun/create-token';
+
+export async function GET(request: Request): Promise<Response> {
+  try {
+    const tokenCreationInfo = {
+      title: "Create Your Blink Token",
+      description: "Use this endpoint to create a new Blink token on the Solana blockchain.",
+      version: "1.0.0",
+      endpoints: {
+        get: {
+          description: "Retrieve information about the token creation process",
+          url: "/api/actions/meme",
+          method: "GET",
+        },
+        post: {
+          description: "Submit a request to create a new Blink token",
+          url: "/api/actions/meme",
+          method: "POST",
+          bodyParameters: [
+            { name: "account", type: "string", description: "The Solana account address that will own the token", required: true },
+            { name: "name", type: "string", description: "The name of your Blink token", required: true },
+            { name: "symbol", type: "string", description: "The symbol of your Blink token (e.g., BLK)", required: true },
+            { name: "description", type: "string", description: "A brief description of your Blink token", required: true },
+            { name: "imageUrl", type: "string", description: "A URL pointing to the image for your Blink token", required: true },
+          ],
         },
       },
-      icon: "",
-      label: ""
+      additionalInfo: {
+        fees: "Creating a Blink token may incur blockchain fees. Please ensure your account has sufficient SOL to cover these fees.",
+        support: "For support, please contact support@blink.com",
+      },
     };
-  
-    return Response.json(payload, {
+
+    return Response.json(tokenCreationInfo, {
+      status: 200,
+      headers: {
+        ...ACTIONS_CORS_HEADERS,
+        'Cache-Control': 'max-age=3600', // Cache for 1 hour
+      },
+    });
+  } catch (error) {
+    console.error("Error in GET /api/actions/meme:", error);
+    return Response.json(
+      { error: "An unexpected error occurred. Please try again later." },
+      {
+        status: 500,
+        headers: ACTIONS_CORS_HEADERS,
+      }
+    );
+  }
+}
+
+export async function POST(request: Request): Promise<Response> {
+  let body: TokenCreationBody;
+
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid request body" }, {
+      status: 400,
       headers: ACTIONS_CORS_HEADERS,
     });
   }
-  
-  export const OPTIONS = GET;
-  
-  export async function POST(request: Request): Promise<Response> {
-    let body: TokenCreationBody;
-  
-    try {
-      body = await request.json();
-    } catch {
-      return Response.json({ error: "Invalid request body" }, {
-        status: 400,
-        headers: ACTIONS_CORS_HEADERS,
-      });
-    }
-  
-    if (!body.account || !body.name || !body.symbol || !body.description || !body.imageUrl) {
-      return Response.json({ error: "Missing required parameters" }, {
-        status: 400,
-        headers: ACTIONS_CORS_HEADERS,
-      });
-    }
-  
-    let account: PublicKey;
-    try {
-      account = new PublicKey(body.account);
-    } catch {
-      return Response.json({ error: "Invalid account" }, {
-        status: 400,
-        headers: ACTIONS_CORS_HEADERS,
-      });
-    }
-  
-    const connection = new Connection(process.env.NEXT_PUBLIC_RPC_URL || "", "confirmed");
-  
-    try {
-      const mintKeypair = Keypair.generate();
-      const mintRent = await connection.getMinimumBalanceForRentExemption(MintLayout.span);
-  
-      const transaction = new Transaction().add(
-        SystemProgram.createAccount({
-          fromPubkey: account,
-          newAccountPubkey: mintKeypair.publicKey,
-          space: MintLayout.span,
-          lamports: mintRent,
-          programId: TOKEN_PROGRAM_ID,
-        }),
-        createInitializeMintInstruction(
-          mintKeypair.publicKey,
-          9, // 9 decimals
-          account,
-          account,
-          TOKEN_PROGRAM_ID
-        )
-      );
-  
-      const associatedTokenAddress = await getAssociatedTokenAddress(
-        mintKeypair.publicKey,
-        account,
-        false,
-        TOKEN_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      );
-  
-      transaction.add(
-        createAssociatedTokenAccountInstruction(
-          account,
-          associatedTokenAddress,
-          account,
-          mintKeypair.publicKey,
-          TOKEN_PROGRAM_ID,
-          ASSOCIATED_TOKEN_PROGRAM_ID
-        ),
-        createMintToInstruction(
-          mintKeypair.publicKey,
-          associatedTokenAddress,
-          account,
-          BigInt(1_000_000 * (10 ** 9)), // 1 million tokens
-          [],
-          TOKEN_PROGRAM_ID
-        )
-      );
-  
-      const blockheight = await connection.getLatestBlockhash();
-      transaction.feePayer = account;
-      transaction.recentBlockhash = blockheight.blockhash;
-      transaction.lastValidBlockHeight = blockheight.lastValidBlockHeight;
-  
-      const payload: ActionPostResponse = await createPostResponse({
-        fields: {
-          transaction,
-          message: `Token "${body.name}" (${body.symbol}) creation transaction prepared. Mint address: ${mintKeypair.publicKey.toString()}`,
-          type: "transaction",
-        },
-      });
-  
-      return Response.json(payload, {
-        headers: ACTIONS_CORS_HEADERS,
-      });
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      return Response.json({ error: `Failed to create token: ${errorMessage}` }, {
-        status: 500,
-        headers: ACTIONS_CORS_HEADERS,
-      });
-    }
+
+  if (!body.account || !body.name || !body.symbol || !body.description || !body.imageUrl) {
+    return Response.json({ error: "Missing required parameters" }, {
+      status: 400,
+      headers: ACTIONS_CORS_HEADERS,
+    });
   }
+
+  try {
+    const response = await axios.post<TokenCreationResponse>(PUMP_API_URL, {
+      owner: body.account,
+      name: body.name,
+      symbol: body.symbol,
+      description: body.description,
+      imageUrl: body.imageUrl,
+    });
+
+    // Create a dummy transaction since we don't have an actual one from the API
+    const dummyTransaction = new Transaction();
+
+    const payload: ActionPostResponse = await createPostResponse({
+      fields: {
+        transaction: dummyTransaction,
+        message: `Blink token creation request for "${body.name}" (${body.symbol}) prepared. Please review the form data: ${JSON.stringify(response.data)}`,
+        type: "transaction",
+      },
+    });
+
+    return Response.json(payload, {
+      headers: ACTIONS_CORS_HEADERS,
+    });
+  } catch (error: unknown) {
+    console.error("Error creating Blink token:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    return Response.json({ error: `Failed to create Blink token: ${errorMessage}` }, {
+      status: 500,
+      headers: ACTIONS_CORS_HEADERS,
+    });
+  }
+}
