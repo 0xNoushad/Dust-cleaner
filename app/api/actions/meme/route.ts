@@ -35,7 +35,7 @@ interface TokenCreationResponse {
 
 const PUMP_API_URL = 'https://api.pump.fun/create-token';
 
-export async function GET(request: Request): Promise<Response> {
+export async function GET(): Promise<Response> {
   try {
     const tokenCreationInfo = {
       title: "Create Your Blink Token",
@@ -127,7 +127,7 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json(payload, {
       headers: ACTIONS_CORS_HEADERS,
     });
-  } catch (error: unknown) {
+  } catch (error) {
     console.error("Error creating Blink token:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     return Response.json({ error: `Failed to create Blink token: ${errorMessage}` }, {
