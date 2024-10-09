@@ -1,11 +1,11 @@
 import {
-  ACTIONS_CORS_HEADERS,
   ActionPostRequest,
   ActionPostResponse,
   createPostResponse,
 } from "@solana/actions";
 import axios from 'axios';
 import { Transaction } from '@solana/web3.js';
+import { NextRequest, NextResponse } from 'next/server';
 
 interface TokenCreationBody extends ActionPostRequest {
   name: string;
@@ -35,14 +35,20 @@ interface TokenCreationResponse {
 
 const PUMP_API_URL = 'https://api.pump.fun/create-token';
 
-const HEADERS = {
-  ...ACTIONS_CORS_HEADERS,
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+const COMMON_HEADERS = {
+  ...CORS_HEADERS,
   'Cache-Control': 'max-age=3600',
   'X-Action-Version': '1',
   'X-Blockchain-Ids': 'solana-mainnet',
 };
 
-export async function GET(): Promise<Response> {
+export async function GET(): Promise<NextResponse> {
   try {
     const tokenCreationInfo = {
       title: "Create Your Blink Token",
@@ -73,38 +79,38 @@ export async function GET(): Promise<Response> {
       },
     };
 
-    return Response.json(tokenCreationInfo, {
+    return NextResponse.json(tokenCreationInfo, {
       status: 200,
-      headers: HEADERS,
+      headers: COMMON_HEADERS,
     });
   } catch (error) {
     console.error("Error in GET /api/actions/meme:", error);
-    return Response.json(
+    return NextResponse.json(
       { error: "An unexpected error occurred. Please try again later." },
       {
         status: 500,
-        headers: HEADERS,
+        headers: COMMON_HEADERS,
       }
     );
   }
 }
 
-export async function POST(request: Request): Promise<Response> {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   let body: TokenCreationBody;
 
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "Invalid request body" }, {
+    return NextResponse.json({ error: "Invalid request body" }, {
       status: 400,
-      headers: HEADERS,
+      headers: COMMON_HEADERS,
     });
   }
 
   if (!body.account || !body.name || !body.symbol || !body.description || !body.imageUrl) {
-    return Response.json({ error: "Missing required parameters" }, {
+    return NextResponse.json({ error: "Missing required parameters" }, {
       status: 400,
-      headers: HEADERS,
+      headers: COMMON_HEADERS,
     });
   }
 
@@ -128,26 +134,25 @@ export async function POST(request: Request): Promise<Response> {
       },
     });
 
-    return Response.json(payload, {
-      headers: HEADERS,
+    return NextResponse.json(payload, {
+      headers: COMMON_HEADERS,
     });
   } catch (error) {
     console.error("Error creating Blink token:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-    return Response.json({ error: `Failed to create Blink token: ${errorMessage}` }, {
+    return NextResponse.json({ error: `Failed to create Blink token: ${errorMessage}` }, {
       status: 500,
-      headers: HEADERS,
+      headers: COMMON_HEADERS,
     });
   }
 }
 
-export async function OPTIONS(): Promise<Response> {
-  return new Response(null, {
+export async function OPTIONS(): Promise<NextResponse> {
+  return new NextResponse(null, {
     status: 204,
     headers: {
-      ...HEADERS,
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      ...CORS_HEADERS,
+      'Access-Control-Max-Age': '86400',
     },
   });
 }
