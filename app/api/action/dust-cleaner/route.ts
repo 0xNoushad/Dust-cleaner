@@ -20,6 +20,7 @@ const HEADERS = {
   ...ACTIONS_CORS_HEADERS,
   "X-Action-Version": "1",
   "X-Blockchain-Ids": "solana",
+  "Content-Type": "application/json",
 };
 
 // GET Request - Fetch metadata for the dust cleaning action
@@ -92,6 +93,14 @@ export async function POST(request: Request) {
 
     const body: ActionPostRequest = await request.json();
 
+    if (!body.account) {
+      console.error("Missing account in request body");
+      return new Response(JSON.stringify({ error: "Missing account" }), {
+        status: 400,
+        headers: HEADERS,
+      });
+    }
+
     let account: PublicKey;
     try {
       account = new PublicKey(body.account);
@@ -152,7 +161,7 @@ export async function POST(request: Request) {
       fields: {
         transaction,
         message: `Dust cleaning transaction created for ${dustAccounts.length} token accounts. Total dust cleaned: ${totalDustCleaned.toFixed(4)} tokens.`,
-        type: "transaction",
+        type:"transaction"
       },
     });
 
