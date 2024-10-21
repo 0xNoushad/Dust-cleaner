@@ -1,5 +1,5 @@
 {
-  "name": "dust-cleaner",
+  "name": "5",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,16 +9,23 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@solana/actions": "^0.1.0",
-    "@solana/spl-token": "^0.3.7",
-    "@solana/web3.js": "^1.73.0",
-    "next": "13.4.2",
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "@solana/actions": "^1.6.5",
+    "@solana/spl-token": "^0.4.8",
+    "@solana/web3.js": "^1.95.3",
+    "@sqds/multisig": "^2.1.3",
+    "axios": "^1.7.7",
+    "next": "14.2.14",
+    "react": "^18",
+    "react-dom": "^18"
   },
   "devDependencies": {
-    "@types/node": "20.2.5",
-    "@types/react": "18.2.7",
-    "typescript": "5.0.4"
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.14",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
   }
 }
