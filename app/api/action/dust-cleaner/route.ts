@@ -14,8 +14,15 @@ import {
 } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, createCloseAccountInstruction } from "@solana/spl-token";
 
-const DUST_THRESHOLD = 0.1 * LAMPORTS_PER_SOL;  
- 
+const DUST_THRESHOLD = 0.1 * LAMPORTS_PER_SOL; // 0.1 SOL equivalent
+
+const HEADERS = {
+  ...ACTIONS_CORS_HEADERS,
+  "X-Action-Version": "1",
+  "X-Blockchain-Ids": "solana",
+};
+
+// GET Request - Fetch metadata for the dust cleaning action
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -27,12 +34,12 @@ export async function GET(request: Request) {
       console.error("Invalid or missing action parameter:", action);
       return new Response(JSON.stringify({ error: "Invalid or missing parameters" }), {
         status: 400,
-        headers: ACTIONS_CORS_HEADERS,
+        headers: HEADERS,
       });
     }
 
     const payload: ActionGetResponse = {
-      icon: "https://s3.ezgif.com/tmp/ezgif-3-275bc52dc3.jpg",
+      icon: "https://i.imgur.com/DIb21T3.png",
       title: "Clean Dust from Solana Wallet",
       description: "Convert small token balances (dust) into SOL. Click and connect wallet to clean dust.",
       label: "Clean Dust",
@@ -49,18 +56,23 @@ export async function GET(request: Request) {
 
     console.log("GET request processed successfully. Payload:", payload);
     return new Response(JSON.stringify(payload), {
-      headers: ACTIONS_CORS_HEADERS,
+      headers: HEADERS,
     });
   } catch (error) {
     console.error("Error in GET request:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: ACTIONS_CORS_HEADERS,
+      headers: HEADERS,
     });
   }
 }
 
-export const OPTIONS = GET;
+// OPTIONS request handler
+export async function OPTIONS(request: Request) {
+  return new Response(null, {
+    headers: HEADERS,
+  });
+}
 
 // POST Request - Execute the dust cleaning transaction
 export async function POST(request: Request) {
@@ -74,7 +86,7 @@ export async function POST(request: Request) {
       console.error("Invalid action parameter:", action);
       return new Response(JSON.stringify({ error: "Invalid parameters" }), {
         status: 400,
-        headers: ACTIONS_CORS_HEADERS,
+        headers: HEADERS,
       });
     }
 
@@ -88,7 +100,7 @@ export async function POST(request: Request) {
       console.error("Invalid user account provided:", body.account);
       return new Response(JSON.stringify({ error: "Invalid account" }), {
         status: 400,
-        headers: ACTIONS_CORS_HEADERS,
+        headers: HEADERS,
       });
     }
 
@@ -107,7 +119,7 @@ export async function POST(request: Request) {
       console.log("No dust accounts found for the user.");
       return new Response(JSON.stringify({ error: "No dust accounts found for the user" }), {
         status: 400,
-        headers: ACTIONS_CORS_HEADERS,
+        headers: HEADERS,
       });
     }
 
@@ -140,20 +152,20 @@ export async function POST(request: Request) {
       fields: {
         transaction,
         message: `Dust cleaning transaction created for ${dustAccounts.length} token accounts. Total dust cleaned: ${totalDustCleaned.toFixed(4)} tokens.`,
-        type: "transaction"
+        type: "transaction",
       },
     });
 
     console.log("POST request processed successfully. Payload:", payload);
 
     return new Response(JSON.stringify(payload), {
-      headers: ACTIONS_CORS_HEADERS,
+      headers: HEADERS,
     });
   } catch (error: any) {
     console.error("Error during POST request processing:", error);
     return new Response(JSON.stringify({ error: `Failed to process dust cleaning: ${error.message}` }), {
       status: 500,
-      headers: ACTIONS_CORS_HEADERS,
+      headers: HEADERS,
     });
   }
 }
