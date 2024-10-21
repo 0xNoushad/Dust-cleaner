@@ -14,9 +14,8 @@ import {
 } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, createCloseAccountInstruction } from "@solana/spl-token";
 
-const DUST_THRESHOLD = 0.1 * LAMPORTS_PER_SOL; // 0.1 SOL equivalent
-
-// GET Request - Fetch metadata for the dust cleaning action
+const DUST_THRESHOLD = 0.1 * LAMPORTS_PER_SOL;  
+ 
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -33,7 +32,7 @@ export async function GET(request: Request) {
     }
 
     const payload: ActionGetResponse = {
-      icon: "https://i.imgur.com/DIb21T3.png",
+      icon: "https://s3.ezgif.com/tmp/ezgif-3-275bc52dc3.jpg",
       title: "Clean Dust from Solana Wallet",
       description: "Convert small token balances (dust) into SOL. Click and connect wallet to clean dust.",
       label: "Clean Dust",
